@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iURDAS Executive Reports | University of Rwanda MoU & Partnerships Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-canvas: #090E1A;
+      --bg-sidebar: #0D3B66;
+      --bg-sidebar-dark: #092947;
+      --bg-card: #121A2E;
+      --bg-card-hover: #17223B;
+      --bg-input: #0D1424;
+      --border-subtle: #23314E;
+      --border-accent: #1D63B8;
+      --ur-blue: #0F5298;
+      --ur-cyan: #0EA5E9;
+      --ur-cyan-light: #38BDF8;
+      --ur-gold: #F59E0B;
+      --status-active: #10B981;
+      --status-warning: #F59E0B;
+      --status-expired: #EF4444;
+      --status-open: #8B5CF6;
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Sidebar Navigation (iURDAS Style) */
+    .sidebar {
+      width: 230px;
+      background: linear-gradient(180deg, #0D4785 0%, #082B52 100%);
+      border-right: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .sidebar-brand {
+      padding: 20px 18px;
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ur-emblem {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #0F5298;
+      border: 2px solid #7DD3FC;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      color: #FFFFFF;
+      letter-spacing: -0.5px;
+      box-shadow: 0 0 15px rgba(14, 165, 233, 0.35);
+      flex-shrink: 0;
+    }
+    .brand-text h2 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: #FFFFFF;
+    }
+    .brand-text span {
+      font-size: 11px;
+      color: #BAE6FD;
+      display: block;
+      margin-top: 2px;
+    }
+    .nav-section-label {
+      padding: 16px 18px 8px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #7DD3FC;
+      font-weight: 700;
+    }
+    .nav-item {
+      padding: 11px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #E2E8F0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.15s ease;
+      border-left: 3px solid transparent;
+    }
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #FFFFFF;
+    }
+    .nav-item.active {
+      background: rgba(9, 14, 26, 0.45);
+      border-left-color: #38BDF8;
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+    .nav-badge {
+      background: rgba(56, 189, 248, 0.2);
+      color: #7DD3FC;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px 18px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      font-size: 11px;
+      color: #BAE6FD;
+      line-height: 1.5;
+    }
+
+    /* Main Workspace */
+    .main-content {
+      flex: 1;
+      padding: 20px 26px 40px;
+      max-width: calc(100vw - 230px);
+    }
+
+    /* Top Executive Header */
+    .top-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .title-block {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .title-block h1 {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      color: #FFFFFF;
+    }
+    .title-block p {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* College Pills (iURDAS Signature Bar) */
+    .college-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+    .college-pill {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 8px 13px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .college-pill:hover {
+      border-color: var(--ur-cyan);
+      color: #FFFFFF;
+    }
+    .college-pill.active {
+      background: linear-gradient(135deg, #0F5298, #0284C7);
+      border-color: #38BDF8;
+      color: #FFFFFF;
+      box-shadow: 0 2px 10px rgba(14, 165, 233, 0.3);
+    }
+
+    /* Action Buttons */
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn {
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn:hover { background: var(--bg-card-hover); border-color: var(--ur-cyan); }
+    .btn-primary {
+      background: linear-gradient(135deg, #0284C7, #0369A1);
+      border-color: #38BDF8;
+      color: #FFFFFF;
+    }
+    .btn-primary:hover { filter: brightness(1.1); }
+
+    /* Filter Slicer Bar */
+    .slicer-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+      gap: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+    }
+    .slicer-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .slicer-group select, .slicer-group input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      outline: none;
+    }
+    .slicer-group select:focus, .slicer-group input:focus {
+      border-color: var(--ur-cyan);
+    }
+
+    /* Executive KPI Strip */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 1200px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 768px) { .kpi-grid { grid-template-columns: repeat(1, 1fr); } }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 16px 18px;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--accent-color, var(--ur-cyan));
+    }
+    .kpi-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: #FFFFFF;
+      margin: 6px 0 4px;
+      letter-spacing: -0.5px;
+    }
+    .kpi-sub {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pill-tag {
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+    }
+    .tag-green { background: rgba(16, 185, 129, 0.16); color: #34D399; }
+    .tag-amber { background: rgba(245, 158, 11, 0.18); color: #FBBF24; }
+    .tag-red { background: rgba(239, 68, 68, 0.18); color: #F87171; }
+    .tag-blue { background: rgba(14, 165, 233, 0.18); color: #38BDF8; }
+
+    /* Visual Grid */
+    .charts-row-2 {
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .charts-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr 1.15fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 1200px) {
+      .charts-row-2, .charts-row-3 { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      gap: 10px;
+    }
+    .panel-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+    .panel-subtitle {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .chart-box {
+      position: relative;
+      height: 255px;
+      width: 100%;
+    }
+
+    /* Executive Table & Watchlist */
+    .table-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .search-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12.5px;
+      width: 320px;
+      max-width: 100%;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+    thead {
+      background: #0D1424;
+    }
+    th {
+      text-align: left;
+      padding: 11px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap;
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(35, 49, 78, 0.6);
+      color: #E2E8F0;
+      vertical-align: top;
+    }
+    tbody tr:hover {
+      background: rgba(14, 165, 233, 0.06);
+      cursor: pointer;
+    }
+    .status-pill {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .st-active { background: rgba(16, 185, 129, 0.16); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .st-soon { background: rgba(245, 158, 11, 0.16); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .st-expired { background: rgba(239, 68, 68, 0.16); color: #F87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+    .st-open { background: rgba(139, 92, 246, 0.16); color: #C4B5FD; border: 1px solid rgba(139, 92, 246, 0.35); }
+
+    .pagination {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Empty / Upload Banner */
+    .upload-banner {
+      background: linear-gradient(90deg, rgba(15, 82, 152, 0.35), rgba(14, 165, 233, 0.15));
+      border: 1px dashed #38BDF8;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 9, 18, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .modal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-accent);
+      border-radius: 12px;
+      max-width: 680px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    }
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .detail-box {
+      background: var(--bg-input);
+      padding: 10px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+    }
+    .detail-box span {
+      display: block;
+      font-size: 10.5px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+    .detail-box p {
+      font-size: 13px;
+      color: #FFFFFF;
+      font-weight: 500;
+      line-height: 1.45;
+    }
+    .section-view { display: none; }
+    .section-view.active { display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- iURDAS Navigation Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="ur-emblem">UR</div>
+      <div class="brand-text">
+        <h2>iURDAS Executive</h2>
+        <span>Strategic Planning & M&E</span>
+      </div>
+    </div>
+
+    <div class="nav-section-label">UR Central Repository</div>
+    <div class="nav-item active" data-view="overview" onclick="switchView('overview', this)">
+      <span>Executive Overview</span>
+      <span class="nav-badge" id="navTotalBadge">823</span>
+    </div>
+    <div class="nav-item" data-view="watchlist" onclick="switchView('watchlist', this)">
+      <span>Expiry & Renewal Alerts</span>
+      <span class="nav-badge" style="background:rgba(245,158,11,0.22);color:#FBBF24;" id="navAlertBadge">16</span>
+    </div>
+    <div class="nav-item" data-view="directory" onclick="switchView('directory', this)">
+      <span>Master MoU Register</span>
+      <span class="nav-badge">Full</span>
+    </div>
+    <div class="nav-item" data-view="finance" onclick="switchView('finance', this)">
+      <span>Funded Commitments</span>
+      <span class="nav-badge" id="navFinanceBadge">50</span>
+    </div>
+
+    <div class="sidebar-footer">
+      <strong>University of Rwanda</strong><br/>
+      Office of DVC Institutional Advancement & Strategic Planning<br/>
+      <span style="color:#7DD3FC;">Data Refreshed: Nov 2026</span>
+    </div>
+  </aside>
+
+  <!-- Main Dashboard Canvas -->
+  <main class="main-content">
+
+    <!-- Header & College Filter Pills -->
+    <div class="top-header">
+      <div class="title-block">
+        <div>
+          <h1>MoUs & Strategic Partnerships Portal</h1>
+          <p>Institutional Partnership Governance, Global Footprint & Lifecycle Monitoring</p>
+        </div>
+      </div>
+
+      <div class="college-pills" id="collegePills">
+        <button class="college-pill active" data-college="ALL" onclick="selectCollege('ALL', this)">ALL UR</button>
+        <button class="college-pill" data-college="UR" onclick="selectCollege('UR', this)">UR CENTRAL</button>
+        <button class="college-pill" data-college="CST" onclick="selectCollege('CST', this)">CST</button>
+        <button class="college-pill" data-college="CMHS" onclick="selectCollege('CMHS', this)">CMHS</button>
+        <button class="college-pill" data-college="CASS" onclick="selectCollege('CASS', this)">CASS</button>
+        <button class="college-pill" data-college="CAVM" onclick="selectCollege('CAVM', this)">CAVM</button>
+        <button class="college-pill" data-college="CBE" onclick="selectCollege('CBE', this)">CBE</button>
+        <button class="college-pill" data-college="CE" onclick="selectCollege('CE', this)">CE</button>
+      </div>
+
+      <div class="header-actions">
+        <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleFileUpload(event)" />
+        <button class="btn btn-primary" onclick="document.getElementById('csvFileInput').click()">
+          📂 Load CSV Dataset
+        </button>
+        <button class="btn" onclick="exportFilteredCSV()">⬇ Export View</button>
+        <button class="btn" onclick="resetFilters()">↺ Reset</button>
+      </div>
+    </div>
+
+    <!-- Live CSV Loader Banner -->
+    <div class="upload-banner" id="uploadBanner">
+      <div style="font-size:12.5px; color:#E2E8F0;">
+        <strong style="color:#38BDF8;">Dataset Ready:</strong> Pre-loaded with UR baseline summary metrics (823 MoUs). Click <strong>"Load CSV Dataset"</strong> and select <code>MoUs_Datasets_Revised(MoUs_Dataset).csv</code> to unlock full row-level search, partner contacts, and interactive cross-filtering across all 823 agreements.
+      </div>
+      <button class="btn btn-primary" onclick="document.getElementById('csvFileInput').click()">Select CSV File</button>
+    </div>
+
+    <!-- Executive Slicer Bar -->
+    <div class="slicer-bar">
+      <div class="slicer-group">
+        <label>Signing Year</label>
+        <select id="filterYear" onchange="applyFilters()">
+          <option value="ALL">All Years (2010–2026)</option>
+        </select>
+      </div>
+      <div class="slicer-group">
+        <label>Region / Continent</label>
+        <select id="filterContinent" onchange="applyFilters()">
+          <option value="ALL">All Regions</option>
+        </select>
+      </div>
+      <div class="slicer-group">
+        <label>Partner Country</label>
+        <select id="filterCountry" onchange="applyFilters()">
+          <option value="ALL">All Countries (68)</option>
+        </select>
+      </div>
+      <div class="slicer-group">
+        <label>Workflow Status</label>
+        <select id="filterWorkflow" onchange="applyFilters()">
+          <option value="ALL">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Expired">Expired</option>
+        </select>
+      </div>
+      <div class="slicer-group">
+        <label>Expiry Alert</label>
+        <select id="filterAlert" onchange="applyFilters()">
+          <option value="ALL">All Alerts</option>
+          <option value="Active">Active / Valid</option>
+          <option value="Expiring Soon (<6 Mo)">Expiring Soon (&lt;6 Mo)</option>
+          <option value="Expired">Expired</option>
+          <option value="OPEN-ENDED">Open-Ended</option>
+        </select>
+      </div>
+      <div class="slicer-group">
+        <label>Thematic Focus</label>
+        <select id="filterTheme" onchange="applyFilters()">
+          <option value="ALL">All Collaboration Areas</option>
+          <option value="Research & Innovation">Research & Innovation</option>
+          <option value="Staff & Student Mobility">Staff & Student Mobility</option>
+          <option value="Capacity Building & Training">Capacity Building & Training</option>
+          <option value="Health & Clinical">Health & Clinical Research</option>
+          <option value="Industry & Internships">Industry & Internships</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card" style="--accent-color:#0EA5E9;">
+        <div class="kpi-label">Total Signed MoUs</div>
+        <div class="kpi-value" id="kpiTotal">823</div>
+        <div class="kpi-sub">
+          <span class="pill-tag tag-blue" id="kpiOpenEnded">140 Open-Ended</span>
+          <span id="kpiFixedSub">683 Fixed-Term</span>
+        </div>
+      </div>
+
+      <div class="kpi-card" style="--accent-color:#10B981;">
+        <div class="kpi-label">Active Workflow MoUs</div>
+        <div class="kpi-value" id="kpiActive">272</div>
+        <div class="kpi-sub">
+          <span class="pill-tag tag-green" id="kpiActivePct">33.0%</span>
+          <span>Currently in execution</span>
+        </div>
+      </div>
+
+      <div class="kpi-card" style="--accent-color:#F59E0B;">
+        <div class="kpi-label">Expiring Soon (&lt;6 Mo)</div>
+        <div class="kpi-value" id="kpiExpiring">16</div>
+        <div class="kpi-sub">
+          <span class="pill-tag tag-amber">Action Required</span>
+          <span>Renewal review window</span>
+        </div>
+      </div>
+
+      <div class="kpi-card" style="--accent-color:#8B5CF6;">
+        <div class="kpi-label">Partner Countries</div>
+        <div class="kpi-value" id="kpiCountries">68</div>
+        <div class="kpi-sub">
+          <span class="pill-tag tag-blue" id="kpiDomesticPct">40.0% Rwanda</span>
+          <span id="kpiIntlPct">60.0% Intl</span>
+        </div>
+      </div>
+
+      <div class="kpi-card" style="--accent-color:#38BDF8;">
+        <div class="kpi-label">Disclosed Grant/MoU Value</div>
+        <div class="kpi-value" id="kpiFundedCount">50</div>
+        <div class="kpi-sub">
+          <span class="pill-tag tag-green">~$6.4M+ &amp; 1.77B RWF</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 1: EXECUTIVE OVERVIEW -->
+    <div id="view-overview" class="section-view active">
+      <div class="charts-row-2">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Partnership Signing Momentum (2010–2026)</div>
+              <div class="panel-subtitle">Annual signed MoUs segmented by Domestic (Rwanda) vs. International Partners</div>
+            </div>
+          </div>
+          <div class="chart-box">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">MoUs by Implementing College / Unit</div>
+              <div class="panel-subtitle">Distribution across UR Central Administration & Constituent Colleges</div>
+            </div>
+          </div>
+          <div class="chart-box">
+            <canvas id="collegeChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-row-3">
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Top 10 Partner Countries</div>
+              <div class="panel-subtitle">Leading bilateral academic & institutional hubs</div>
+            </div>
+          </div>
+          <div class="chart-box">
+            <canvas id="countryChart"></canvas>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Portfolio Lifecycle & Alert Status</div>
+              <div class="panel-subtitle">Workflow status & expiry risk distribution</div>
+            </div>
+          </div>
+          <div class="chart-box">
+            <canvas id="statusChart"></canvas>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Strategic Areas of Collaboration</div>
+              <div class="panel-subtitle">Thematic alignment across UR strategic pillars</div>
+            </div>
+          </div>
+          <div class="chart-box">
+            <canvas id="themeChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Priority Watchlist Preview -->
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Executive Renewal Watchlist — Expiring Within 6 Months &amp; Special Governance Remarks</div>
+            <div class="panel-subtitle">Click any partnership row to inspect full focal points, dates, and collaboration scope</div>
+          </div>
+          <button class="btn" onclick="switchView('directory', document.querySelector('[data-view=directory]'))">View All 823 Records →</button>
+        </div>
+        <div class="table-wrap">
+          <table id="watchlistPreviewTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Partner Institution</th>
+                <th>Country</th>
+                <th>Unit</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>UR Focal Point</th>
+                <th>Alert / Remark</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: EXPIRY & RENEWAL ALERTS -->
+    <div id="view-watchlist" class="section-view">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Actionable Renewal Pipeline (&lt;6 Months to Expiry) &amp; Half-Signed MoUs</div>
+            <div class="panel-subtitle">Priority agreements requiring DVC Institutional Advancement &amp; College Principal intervention</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="fullWatchlistTable">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Partner Institution</th>
+                <th>Country</th>
+                <th>Implementing Unit</th>
+                <th>End Date</th>
+                <th>Workflow Status</th>
+                <th>Expiry Alert</th>
+                <th>Remarks</th>
+                <th>UR Focal Point</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: FULL MASTER DIRECTORY -->
+    <div id="view-directory" class="section-view">
+      <div class="panel">
+        <div class="table-controls">
+          <div>
+            <div class="panel-title">Master Institutional MoU Register</div>
+            <div class="panel-subtitle" id="tableCountLabel">Showing 823 agreements</div>
+          </div>
+          <input type="text" class="search-box" id="tableSearch" placeholder="🔍 Search partner, country, focal point, or keyword..." oninput="renderDirectoryTable(1)" />
+        </div>
+        <div class="table-wrap">
+          <table id="masterTable">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Partner Institution</th>
+                <th>Country</th>
+                <th>College/Unit</th>
+                <th>Areas of Collaboration</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Status</th>
+                <th>Alert</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="pageInfo">Page 1 of 1</span>
+          <div style="display:flex; gap:8px;">
+            <button class="btn" onclick="changePage(-1)">← Previous</button>
+            <button class="btn" onclick="changePage(1)">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 4: FUNDED COMMITMENTS -->
+    <div id="view-finance" class="section-view">
+      <div class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">MoUs &amp; Specific Agreements with Disclosed Financial Commitments</div>
+            <div class="panel-subtitle">Grant-backed partnerships, research subcontracts, and sponsored capacity building programs</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table id="financeTable">
+            <thead>
+              <tr>
+                <th>No.</th>
+                <th>Partner Institution</th>
+                <th>Country</th>
+                <th>Unit</th>
+                <th>Disclosed Initial Budget</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Partnership Detail Modal -->
+  <div class="modal-backdrop" id="detailModal" onclick="if(event.target===this) closeModal()">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px;">
+        <div>
+          <span class="pill-tag tag-blue" id="mNo">MoU #1</span>
+          <h2 id="mPartner" style="font-size:18px; margin-top:6px; color:#FFFFFF;">Partner Name</h2>
+        </div>
+        <button class="btn" onclick="closeModal()">✕ Close</button>
+      </div>
+      <div class="modal-grid">
+        <div class="detail-box"><span>Country &amp; Region</span><p id="mCountry">—</p></div>
+        <div class="detail-box"><span>Implementing College / Unit</span><p id="mCollege">—</p></div>
+        <div class="detail-box"><span>Effective Period</span><p id="mDates">—</p></div>
+        <div class="detail-box"><span>Workflow &amp; Expiry Alert</span><p id="mStatus">—</p></div>
+        <div class="detail-box"><span>UR Responsible Focal Point</span><p id="mURFocal">—</p></div>
+        <div class="detail-box"><span>Partner Focal Point</span><p id="mPartnerFocal">—</p></div>
+        <div class="detail-box"><span>Disclosed Budget / Currency</span><p id="mBudget">—</p></div>
+        <div class="detail-box"><span>Governance Remarks</span><p id="mRemarks">—</p></div>
+      </div>
+      <div class="detail-box" style="margin-top:14px;">
+        <span>Areas of Collaboration</span>
+        <p id="mAreas" style="margin-top:4px;">—</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Embedded baseline snapshot from MoUs_Datasets_Revised(MoUs_Dataset).csv (823 records)
+    // Automatically replaced with all 823 full rows when user selects the CSV file.
+    const SAMPLE_SEED_DATA = [
+      { No: 468, Partner_Institution: "BRISTOL UNIVERSITY", Country: "UK", Continent: "Europe", Implementing_College_Entity: "UR", Areas_of_Collaboration: "JOINT RESEARCH, STAFF AND STUDENT EXCHANGE, POSTGRADUATE SUPERVISION", Start_Date: "2/4/2020", End_Date: "2/3/2027", Workflow_Status: "Active", Responsible_UR_Side: "DVC IA, dvc.ia@ur.ac.rw", Responsible_Partener_Side: "International Office", Budget_Initial_Currency: "", Remarks: "", Expiry_Alert: "Expiring Soon (<6 Mo)" },
+      { No: 490, Partner_Institution: "MINISTRY OF PUBLIC SERVICE, RWANDA POLYTECHNIC (RP)", Country: "RWANDA", Continent: "Africa", Implementing_College_Entity: "UR", Areas_of_Collaboration: "TECHNICAL EDUCATION CAPACITY BUILDING, JOINT RESEARCH & INNOVATION", Start_Date: "4/15/2022", End_Date: "4/14/2027", Workflow_Status: "Active", Responsible_UR_Side: "DVC IA, dvc.ia@ur.ac.rw", Responsible_Partener_Side: "MIFOTRA / RP", Budget_Initial_Currency: "", Remarks: "", Expiry_Alert: "Expiring Soon (<6 Mo)" },
+      { No: 496, Partner_Institution: "THE FLEMISH ASSOCIATION FOR DEVELOPMENT COOPERATION AND TECHNICAL ASSISTANCE (VVOB)", Country: "BELGIUM", Continent: "Europe", Implementing_College_Entity: "CE", Areas_of_Collaboration: "TEACHER EDUCATION QUALITY, SCHOOL LEADERSHIP & CONTINUOUS PROFESSIONAL DEVELOPMENT", Start_Date: "8/16/2022", End_Date: "12/31/2026", Workflow_Status: "Active", Responsible_UR_Side: "PRINCIPAL CE, principal.ce@ur.ac.rw", Responsible_Partener_Side: "VVOB Country Director", Budget_Initial_Currency: "4,840,000 EUROS", Remarks: "", Expiry_Alert: "Expiring Soon (<6 Mo)" },
+      { No: 679, Partner_Institution: "HELSINKI UNIVERSITY", Country: "FINLAND", Continent: "Europe", Implementing_College_Entity: "CST", Areas_of_Collaboration: "RESEARCH COLLABORATION, POST-GRADUATE TRAINING, STAFF AND STUDENTS EXCHANGE", Start_Date: "8/24/2024", End_Date: "3/19/2027", Workflow_Status: "Active", Responsible_UR_Side: "DVC IA, dvc.ia@ur.ac.rw", Responsible_Partener_Side: "Global Innovation Network", Budget_Initial_Currency: "", Remarks: "", Expiry_Alert: "Expiring Soon (<6 Mo)" },
+      { No: 685, Partner_Institution: "DEEP LEARNING INDABA", Country: "UK", Continent: "Europe", Implementing_College_Entity: "CST", Areas_of_Collaboration: "ARTIFICIAL INTELLIGENCE & MACHINE LEARNING CAPACITY BUILDING, ANNUAL INDABA HOSTING", Start_Date: "4/11/2025", End_Date: "4/10/2027", Workflow_Status: "Active", Responsible_UR_Side: "PRINCIPAL CST, principal.cst@ur.ac.rw", Responsible_Partener_Side: "Indaba Board", Budget_Initial_Currency: "", Remarks: "", Expiry_Alert: "Expiring Soon (<6 Mo)" },
+      { No: 709, Partner_Institution: "LEIDEN UNIVERSITY", Country: "NETHERLANDS", Continent: "Europe", Implementing_College_Entity: "CMHS", Areas_of_Collaboration: "JOINT BIOMEDICAL & GLOBAL HEALTH RESEARCH, STAFF AND STUDENT MOBILITY", Start_Date: "4/2/2025", End_Date: "4/1/2027", Workflow_Status: "Active", Responsible_UR_Side: "DVC IA, dvc.ia@ur.ac.rw", Responsible_Partener_Side: "Leiden Global", Budget_Initial_Currency: "", Remarks: "", Expiry_Alert: "Expiring Soon (<6 Mo)" },
+      { No: 731, Partner_Institution: "MTN RWANDACELL PLC", Country: "RWANDA", Continent: "Africa", Implementing_College_Entity: "CST", Areas_of_Collaboration: "FINTECH INNOVATION, STUDENT INTERNSHIPS, DIGITAL SKILLS & RESEARCH", Start_Date: "12/22/2023", End_Date: "12/21/2026", Workflow_Status: "Active", Responsible_UR_Side: "DVC IA, dvc.ia@ur.ac.rw", Responsible_Partener_Side: "MTN Rwanda HR", Budget_Initial_Currency: "", Remarks: "", Expiry_Alert: "Expiring Soon (<6 Mo)" },
+      { No: 752, Partner_Institution: "KIGALI CITY", Country: "RWANDA", Continent: "Africa", Implementing_College_Entity: "CST", Areas_of_Collaboration: "URBAN PLANNING, SMART CITY ANALYTICS, SUSTAINABLE INFRASTRUCTURE & INTERNSHIPS", Start_Date: "3/4/2026", End_Date: "2/17/2027", Workflow_Status: "Active", Responsible_UR_Side: "DVC IA, dvc.ia@ur.ac.rw", Responsible_Partener_Side: "City of Kigali", Budget_Initial_Currency: "", Remarks: "", Expiry_Alert: "Expiring Soon (<6 Mo)" },
+      { No: 25, Partner_Institution: "SIDA (SWEDISH INTERNATIONAL DEVELOPMENT COOPERATION AGENCY)", Country: "SWEDEN", Continent: "Europe", Implementing_College_Entity: "UR-SWEDEN_Project", Areas_of_Collaboration: "RESEARCH CAPACITY STRENGTHENING, PHD & POSTDOC TRAINING, INSTITUTIONAL INFRASTRUCTURE", Start_Date: "7/1/2019", End_Date: "6/30/2025", Workflow_Status: "Expired", Responsible_UR_Side: "DVC IA, dvc.ia@ur.ac.rw", Responsible_Partener_Side: "Embassy of Sweden", Budget_Initial_Currency: "278,423,000 SEK", Remarks: "", Expiry_Alert: "Expired" },
+      { No
